@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Data Fetching & Core Utilities
 requests
 aiohttp
@@ -11,7 +13,7 @@ scikit-learn
 joblib
 
 # Deep Learning & Transformers
-torch --index-url https://download.pytorch.org/whl/cpu
+torch
 transformers
 huggingface_hub
 
