@@ -1,0 +1,6 @@
+tmdb:
+  base_url: "https://api.tmdb.org/3"
+  attribution:
+    disclaimer: "This product uses the TMDb API but is not endorsed or certified by TMDb."
+    logo_url: "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d53e501a4cc6745d2d8eb5314df140b519a1714ed53f601f7498fa73e74bb0b3.svg"
+    fallback_logo_url: "https://images.tmdb.org/static_pages/brand_guidelines/logo_2.png"

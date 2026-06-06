@@ -1,0 +1,23 @@
+# Data Fetching & Core Utilities
+requests
+aiohttp
+python-dotenv
+pyyaml
+
+# Data Science & Classical ML Baseline
+numpy
+pandas
+scikit-learn
+joblib
+
+# Deep Learning & Transformers
+torch --index-url https://download.pytorch.org/whl/cpu
+transformers
+huggingface_hub
+
+# Dashboard & UI
+streamlit
+
+# Development Environment (Jupyter Notebook support)
+ipykernel
+notebook

@@ -1,0 +1,18 @@
+# Secure Credentials & Environment variables
+.env
+.streamlit/secrets.toml
+
+# Python system artifacts
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Exclude massive local model weights (Crucial to prevent Git push failures)
+models/
+
+# Exclude raw and processed analytical datasets
+data/
+
+# Virtual environments
+venv/
+env/

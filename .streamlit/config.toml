@@ -1,0 +1,6 @@
+[theme]
+primaryColor="#f59e0b" # Coffee amber accent for action buttons
+backgroundColor="#1f2937" # The main matte slate grey canvas
+secondaryBackgroundColor="#111827" # Darker matte charcoal for sidebar/cards
+textColor="#9ca3af" # Crisp, off-white text for readability
+font="sans serif"
