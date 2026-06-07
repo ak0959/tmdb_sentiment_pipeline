@@ -10,10 +10,14 @@ import numpy as np
 import base64
 import random
 
-# Import the external text template registries
+# Import external modules
 import templates
+import projection_room
 import importlib
-importlib.reload(templates)  # Forces Streamlit to read your text updates on every refresh
+
+# Force reloads on every local execution to prevent state caching bugs
+importlib.reload(templates)
+importlib.reload(projection_room)
 
 # 1. External Asset Integration Helper
 def local_css(file_name):
@@ -125,111 +129,119 @@ def simulate_star_breakdown(total_votes, vote_average):
     raw_counts[4] += diff
     return np.clip(raw_counts, 0, None).tolist()
 
-# 5. Sidebar Input Architecture
-st.sidebar.title("Find Your Film")
-search_input = st.sidebar.text_input("Type Movie Title Here:", value="")
+# 5. Sidebar Navigation Architecture
+st.sidebar.title("Navigation")
+app_mode = st.sidebar.radio("Go to page:", ["🎬 Movie Vibe Check", "👁️ Inside the Projection Room"])
+st.sidebar.markdown("<hr style='margin: 15px 0; border-color: #374151;'>", unsafe_allow_html=True)
 
-movie_options = {}
-movie_id = None
+# --- NAVIGATION ROUTING BLOCKS ---
 
-if search_input.strip():
-    search_url = "https://api.themoviedb.org/3/search/movie"
-    search_params = {"api_key": TMDB_API_KEY, "query": search_input}
-    try:
-        search_url_res = requests.get(search_url, params=search_params)
-        if search_url_res.status_code == 200:
-            results = search_url_res.json().get("results", [])
-            for movie in results[:10]:
-                release_year = movie.get("release_date", "0000")[:4]
-                display_title = f"{movie.get('title')} ({release_year})"
-                movie_options[display_title] = movie.get("id")
-    except Exception as e:
-        st.sidebar.error(f"Search API Stalled: {str(e)}")
+# PAGE 1: CORE SENTIMENT APP
+if app_mode == "🎬 Movie Vibe Check":
+    st.sidebar.title("Find Your Film")
+    search_input = st.sidebar.text_input("Type Movie Title Here:", value="")
 
-if movie_options:
-    selected_movie = st.sidebar.selectbox("Select matching movie entry:", list(movie_options.keys()))
-    movie_id = movie_options[selected_movie]
-else:
-    if search_input.strip(): st.sidebar.warning("No dynamic database matches discovered.")
-    else: st.sidebar.info("Type a keyword above to generate matching options.")
+    movie_options = {}
+    movie_id = None
 
-spill_tea_clicked = st.sidebar.button("Spill the Tea ☕")
+    if search_input.strip():
+        search_url = "https://api.themoviedb.org/3/search/movie"
+        search_params = {"api_key": TMDB_API_KEY, "query": search_input}
+        try:
+            search_url_res = requests.get(search_url, params=search_params)
+            if search_url_res.status_code == 200:
+                results = search_url_res.json().get("results", [])
+                for movie in results[:10]:
+                    release_year = movie.get("release_date", "0000")[:4]
+                    display_title = f"{movie.get('title')} ({release_year})"
+                    movie_options[display_title] = movie.get("id")
+        except Exception as e:
+            st.sidebar.error(f"Search API Stalled: {str(e)}")
 
-# Main Title Render
-st.title("🎬 The Movie Vibe Check")
-st.markdown("<p style='color: #9ca3af; font-size: 1.1rem; margin-top: -15px;'>A sophisticated look at audience sentiment trends using deep learning.</p>", unsafe_allow_html=True)
-st.markdown("<hr style='margin-bottom: 30px; border-color: #374151;'>", unsafe_allow_html=True)
+    if movie_options:
+        selected_movie = st.sidebar.selectbox("Select matching movie entry:", list(movie_options.keys()))
+        movie_id = movie_options[selected_movie]
+    else:
+        if search_input.strip(): st.sidebar.warning("No dynamic database matches discovered.")
+        else: st.sidebar.info("Type a keyword above to generate matching options.")
 
-# 6. Pipeline Analysis Execution Context
-if spill_tea_clicked and movie_id:
-    with st.spinner("Processing local vectorized batch analysis..."):
-        base_url = "https://api.themoviedb.org/3/movie"
-        params = {"api_key": TMDB_API_KEY}
-        det_res = requests.get(f"{base_url}/{movie_id}", params=params)
-        cred_res = requests.get(f"{base_url}/{movie_id}/credits", params=params)
-        rev_res = requests.get(f"{base_url}/{movie_id}/reviews", params=params)
-        
-        if det_res.status_code == 200 and cred_res.status_code == 200 and rev_res.status_code == 200:
-            movie_data = det_res.json()
-            cred_data = cred_res.json()
-            review_data = rev_res.json()
+    spill_tea_clicked = st.sidebar.button("Spill the Tea ☕")
+
+    # Main Title Render
+    st.title("🎬 The Movie Vibe Check")
+    st.markdown("<p style='color: #9ca3af; font-size: 1.1rem; margin-top: -15px;'>A sophisticated look at audience sentiment trends using deep learning.</p>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin-bottom: 30px; border-color: #374151;'>", unsafe_allow_html=True)
+
+    # 6. Pipeline Analysis Execution Context
+    if spill_tea_clicked and movie_id:
+        with st.spinner("Processing local vectorized batch analysis..."):
+            base_url = "https://api.themoviedb.org/3/movie"
+            params = {"api_key": TMDB_API_KEY}
+            det_res = requests.get(f"{base_url}/{movie_id}", params=params)
+            cred_res = requests.get(f"{base_url}/{movie_id}/credits", params=params)
+            rev_res = requests.get(f"{base_url}/{movie_id}/reviews", params=params)
             
-            title = movie_data.get("title", "Unknown Title")
-            tagline = movie_data.get("tagline", "")
-            global_votes = movie_data.get("vote_count", 0)
-            vote_avg = movie_data.get("vote_average", 0.0)
-            total_reviews = review_data.get("total_results", 0)
-            poster_path = movie_data.get("poster_path", "")
-            backdrop_path = movie_data.get("backdrop_path", "")
-            raw_date = movie_data.get("release_date", "")
-            formatted_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d-%b-%Y") if raw_date else "N/A"
-            
-            crew_list = cred_data.get("crew", [])
-            directors = [m.get("name") for m in crew_list if m.get("job") == "Director"]
-            cast_list = cred_data.get("cast", [])
-            leads = [f"{c.get('name')} ({c.get('character')})" for c in cast_list[:3]]
-            supporting = [f"{c.get('name')} ({c.get('character')})" for c in cast_list[3:8]]
-            
-            # Local Batch Matrix Inference
-            reviews_list = review_data.get("results", [])
-            text_batch = [rev.get("content", "").strip() for rev in reviews_list if rev.get("content", "").strip()]
-            
-            fantastic_bucket = []
-            neutral_bucket = []
-            bad_bucket = []
-            
-            if len(text_batch) > 0:
-                inputs = tokenizer(text_batch, padding=True, truncation=True, max_length=256, return_tensors="pt").to(device)
-                with torch.no_grad():
-                    outputs = model(**inputs)
-                    probs = F.softmax(outputs.logits, dim=-1).cpu().numpy()
+            if det_res.status_code == 200 and cred_res.status_code == 200 and rev_res.status_code == 200:
+                movie_data = det_res.json()
+                cred_data = cred_res.json()
+                review_data = rev_res.json()
                 
-                for idx, prob in enumerate(probs):
-                    review_text = text_batch[idx]
-                    pred_class = prob.argmax()
+                title = movie_data.get("title", "Unknown Title")
+                tagline = movie_data.get("tagline", "")
+                global_votes = movie_data.get("vote_count", 0)
+                vote_avg = movie_data.get("vote_average", 0.0)
+                total_reviews = review_data.get("total_results", 0)
+                poster_path = movie_data.get("poster_path", "")
+                backdrop_path = movie_data.get("backdrop_path", "")
+                raw_date = movie_data.get("release_date", "")
+                formatted_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d-%b-%Y") if raw_date else "N/A"
+                
+                crew_list = cred_data.get("crew", [])
+                directors = [m.get("name") for m in crew_list if m.get("job") == "Director"]
+                cast_list = cred_data.get("cast", [])
+                leads = [f"{c.get('name')} ({c.get('character')})" for c in cast_list[:3]]
+                supporting = [f"{c.get('name')} ({c.get('character')})" for c in cast_list[3:8]]
+                
+                # Local Batch Matrix Inference
+                reviews_list = review_data.get("results", [])
+                text_batch = [rev.get("content", "").strip() for rev in reviews_list if rev.get("content", "").strip()]
+                
+                fantastic_bucket = []
+                neutral_bucket = []
+                bad_bucket = []
+                
+                if len(text_batch) > 0:
+                    inputs = tokenizer(text_batch, padding=True, truncation=True, max_length=256, return_tensors="pt").to(device)
+                    with torch.no_grad():
+                        outputs = model(**inputs)
+                        probs = F.softmax(outputs.logits, dim=-1).cpu().numpy()
                     
-                    # TONE FIX ADJUSTMENT: Reclassify balanced text profiles into Neutral
-                    lowercase_review = review_text.lower()
-                    if pred_class == 2 and any(kw in lowercase_review for kw in ["delicate balance", "grounded approach", "measured tone", "analytical"]):
-                        pred_class = 1
-                    
-                    if pred_class == 2: fantastic_bucket.append(review_text)
-                    elif pred_class == 1: neutral_bucket.append(review_text)
-                    else: bad_bucket.append(review_text)
-            
-            backdrop_url = f"https://image.tmdb.org/t/p/original{backdrop_path}" if backdrop_path else ""
-            poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else ""
-            
-            # Assemble Star Breakdown Elements
-            star_counts = simulate_star_breakdown(global_votes, vote_avg)
-            star_bars_html = ""
-            for star_idx, count in enumerate(reversed(star_counts)):
-                star_num = 5 - star_idx
-                pct = (count / global_votes) * 100 if global_votes > 0 else 0
-                star_bars_html += f'<div class="hero-rating-bar-container"><div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #ffffff;"><strong>⭐ {star_num} Stars</strong><span style="color: #cbd5e1;">{count:,} ({pct:.1f}%)</span></div><div class="hero-rating-bar-bg"><div class="hero-rating-bar-fill" style="width: {pct}%;"></div></div></div>'
+                    for idx, prob in enumerate(probs):
+                        review_text = text_batch[idx]
+                        pred_class = prob.argmax()
+                        
+                        # TONE FIX ADJUSTMENT: Reclassify balanced text profiles into Neutral
+                        lowercase_review = review_text.lower()
+                        if pred_class == 2 and any(kw in lowercase_review for kw in ["delicate balance", "grounded approach", "measured tone", "analytical"]):
+                            pred_class = 1
+                        
+                        if pred_class == 2: fantastic_bucket.append(review_text)
+                        elif pred_class == 1: neutral_bucket.append(review_text)
+                        else: bad_bucket.append(review_text)
+                
+                backdrop_url = f"https://image.tmdb.org/t/p/original{backdrop_path}" if backdrop_path else ""
+                poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else ""
+                
+                # Assemble Star Breakdown Elements
+                star_counts = simulate_star_breakdown(global_votes, vote_avg)
+                star_bars_html = ""
+                for star_idx, count in enumerate(reversed(star_counts)):
+                    star_num = 5 - star_idx
+                    pct = (count / global_votes) * 100 if global_votes > 0 else 0
+                    star_bars_html += f'<div class="hero-rating-bar-container"><div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #ffffff;"><strong>⭐ {star_num} Stars</strong><span style="color: #cbd5e1;">{count:,} ({pct:.1f}%)</span></div><div class="hero-rating-bar-bg"><div class="hero-rating-bar-fill" style="width: {pct}%;"></div></div></div>'
 
-            # Open Landscape Hero Profile Panel
-            st.markdown(f"""
+                # Open Landscape Hero Profile Panel
+                st.markdown(f"""
 <div class="movie-hero-panel" style="background-image: linear-gradient(to right, rgba(17, 24, 39, 0.75) 30%, rgba(31, 41, 55, 0.1) 100%), url('{backdrop_url}');">
 <div class="hero-poster-column">
 <img src="{poster_url}" class="hero-poster-img" alt="Poster"/>
@@ -249,93 +261,93 @@ if spill_tea_clicked and movie_id:
 </div>
 </div>
 """, unsafe_allow_html=True)
-            
-            # CONDITIONAL INTERFACE OVERLAY: Summaries require at least 10 text reviews
-            if total_reviews < 10:
-                gif_html = ""
-                gif_path = r"assets/more data.gif"
                 
-                if os.path.exists(gif_path):
-                    with open(gif_path, "rb") as f:
-                        encoded_gif = base64.b64encode(f.read()).decode("utf-8")
-                    gif_html = f'<img src="data:image/gif;base64,{encoded_gif}" class="hungry-gif-element" alt="Hungry for Data"/>'
+                # CONDITIONAL INTERFACE OVERLAY: Summaries require at least 10 text reviews
+                if total_reviews < 10:
+                    gif_html = ""
+                    gif_path = r"assets/more data.gif"
+                    
+                    if os.path.exists(gif_path):
+                        with open(gif_path, "rb") as f:
+                            encoded_gif = base64.b64encode(f.read()).decode("utf-8")
+                        gif_html = f'<img src="data:image/gif;base64,{encoded_gif}" class="hungry-gif-element" alt="Hungry for Data"/>'
+                    else:
+                        gif_html = '<div style="font-size: 4rem;">🧀</div>'
+                    
+                    st.markdown(f"""
+                    <div class="hungry-card-wrapper">
+                        <div class="hungry-text-side">
+                            <h3 style="margin-top: 0; margin-bottom: 12px; color: #ffffff; font-size: 1.6rem;">The Oracle is Hungry for Data!</h3>
+                            <p style="color: #9ca3af; margin: 0; line-height: 1.75; font-size: 1.05rem;">
+                                This movie currently holds only <strong>{total_reviews}</strong> text review{'s' if total_reviews != 1 else ''} on the native platform registry. 
+                                Our sentiment pipeline needs a baseline threshold of at least <strong>10 text reviews</strong> to calculate accurate macro metrics 
+                                and write an un-biased consensus summary. Feed me more data to run a full Vibe Check!
+                            </p>
+                        </div>
+                        <div class="hungry-gif-side">
+                            {gif_html}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
-                    gif_html = '<div style="font-size: 4rem;">🧀</div>'
-                
-                st.markdown(f"""
-                <div class="hungry-card-wrapper">
-                    <div class="hungry-text-side">
-                        <h3 style="margin-top: 0; margin-bottom: 12px; color: #ffffff; font-size: 1.6rem;">The Oracle is Hungry for Data!</h3>
-                        <p style="color: #9ca3af; margin: 0; line-height: 1.75; font-size: 1.05rem;">
-                            This movie currently holds only <strong>{total_reviews}</strong> text review{'s' if total_reviews != 1 else ''} on the native platform registry. 
-                            Our sentiment pipeline needs a baseline threshold of at least <strong>10 text reviews</strong> to calculate accurate macro metrics 
-                            and write an un-biased consensus summary. Feed me more data to run a full Vibe Check!
-                        </p>
-                    </div>
-                    <div class="hungry-gif-side">
-                        {gif_html}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    total_analyzed = len(fantastic_bucket) + len(neutral_bucket) + len(bad_bucket)
+                    pct_fantastic = (len(fantastic_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
+                    pct_neutral = (len(neutral_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
+                    pct_bad = (len(bad_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
+                    
+                    # Minimalist Floating Emoji Metrics (Borders & Boxes completely stripped)
+                    m_col1, m_col2, m_col3 = st.columns(3)
+                    with m_col1: 
+                        st.markdown(f"""
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤩</span>
+                            <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_fantastic:.1f}%</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with m_col2: 
+                        st.markdown(f"""
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤔</span>
+                            <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_neutral:.1f}%</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with m_col3: 
+                        st.markdown(f"""
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">😞</span>
+                            <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_bad:.1f}%</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Consensus Summary Layout Box
+                    st.markdown("<br><h3 style='font-size: 1.4rem;'>📌 The TL;DR Consensus</h3>", unsafe_allow_html=True)
+                    summary_text = generate_human_consensus(fantastic_bucket, neutral_bucket, bad_bucket, title, vote_avg)
+                    st.markdown(f'<div class="summary-box">{summary_text}</div>', unsafe_allow_html=True)
+                    
+                # UNIFIED REVIEW DISPLAY: Renders individual streams regardless of the summary data threshold
+                st.markdown("<br><h3 style='font-size: 1.4rem;'>💬 Real Reviews</h3>", unsafe_allow_html=True)
+                r_col1, r_col2, r_col3 = st.columns(3)
+                with r_col1:
+                    st.markdown('<p class="review-column-header" style="color: #28a745;">🟢 Fantastic Reviews</p>', unsafe_allow_html=True)
+                    if fantastic_bucket:
+                        for text in fantastic_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                    else: st.caption("No text records available in this sentiment class.")
+                with r_col2:
+                    st.markdown('<p class="review-column-header" style="color: #ffc107;">🟡 Neutral Reviews</p>', unsafe_allow_html=True)
+                    if neutral_bucket:
+                        for text in neutral_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                    else: st.caption("No text records available in this sentiment class.")
+                with r_col3:
+                    st.markdown('<p class="review-column-header" style="color: #dc3545;">🔴 Bad Reviews</p>', unsafe_allow_html=True)
+                    if bad_bucket:
+                        for text in bad_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                    else: st.caption("No text records available in this sentiment class.")
             else:
-                total_analyzed = len(fantastic_bucket) + len(neutral_bucket) + len(bad_bucket)
-                pct_fantastic = (len(fantastic_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
-                pct_neutral = (len(neutral_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
-                pct_bad = (len(bad_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
-                
-                # Minimalist Floating Emoji Metrics (Borders & Card Containers completely stripped)
-                m_col1, m_col2, m_col3 = st.columns(3)
-                with m_col1: 
-                    st.markdown(f"""
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤩</span>
-                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_fantastic:.1f}%</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with m_col2: 
-                    st.markdown(f"""
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤔</span>
-                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_neutral:.1f}%</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with m_col3: 
-                    st.markdown(f"""
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">😞</span>
-                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_bad:.1f}%</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Consensus Summary Layout Box
-                st.markdown("<br><h3 style='font-size: 1.4rem;'>📌 The TL;DR Consensus</h3>", unsafe_allow_html=True)
-                summary_text = generate_human_consensus(fantastic_bucket, neutral_bucket, bad_bucket, title, vote_avg)
-                st.markdown(f'<div class="summary-box">{summary_text}</div>', unsafe_allow_html=True)
-                
-            # UNIFIED REVIEW DISPLAY: Renders the column rows for ALL search results regardless of total count
-            st.markdown("<br><h3 style='font-size: 1.4rem;'>💬 Real Reviews</h3>", unsafe_allow_html=True)
-            r_col1, r_col2, r_col3 = st.columns(3)
-            with r_col1:
-                st.markdown('<p class="review-column-header" style="color: #28a745;">🟢 Fantastic Reviews</p>', unsafe_allow_html=True)
-                if fantastic_bucket:
-                    for text in fantastic_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                else: st.caption("No text records available in this sentiment class.")
-            with r_col2:
-                st.markdown('<p class="review-column-header" style="color: #ffc107;">🟡 Neutral Reviews</p>', unsafe_allow_html=True)
-                if neutral_bucket:
-                    for text in neutral_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                else: st.caption("No text records available in this sentiment class.")
-            with r_col3:
-                st.markdown('<p class="review-column-header" style="color: #dc3545;">🔴 Bad Reviews</p>', unsafe_allow_html=True)
-                if bad_bucket:
-                    for text in bad_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                else: st.caption("No text records available in this sentiment class.")
-        else:
-            st.error("Failed to extract operational metadata records from TMDb channels.")
-elif spill_tea_clicked:
-    st.sidebar.error("Select an active movie entry first from the search results.")
-else:
-    st.markdown(f"""
+                st.error("Failed to extract operational metadata records from TMDb channels.")
+    elif spill_tea_clicked:
+        st.sidebar.error("Select an active movie entry first from the search results.")
+    else:
+        st.markdown(f"""
 <div class="welcome-container">
 <h2 style="color: #f9fafb; margin-bottom: 10px; font-weight: bold;">The Cinema Oracle is Resting... 👁️</h2>
 <p style="color: #9ca3af; font-size: 1.05rem; max-width: 650px; margin: 0 auto 25px auto;">
@@ -345,7 +357,11 @@ sidebar input to discover entries, select your target, and run a live sentiment 
 </div>
 """, unsafe_allow_html=True)
 
-# 7. Integrated HTML Flexbox Footer
+# PAGE 2: EXTRACTED DOCUMENTATION COMPONENT
+elif app_mode == "👁️ Inside the Projection Room":
+    projection_room.render_page()
+
+# 7. Integrated HTML Flexbox Footer (Consistent Across Both Submodule Views)
 st.markdown("<br>", unsafe_allow_html=True)
 svg_content = ""
 if os.path.exists(LOCAL_LOGO_PATH):
