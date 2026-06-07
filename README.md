@@ -61,24 +61,6 @@ Human-Readable Movie Intelligence
 
 ---
 
-## 📸 Application Preview
-
-> Add screenshots here
-
-### Search Experience
-
-![Search Screen](assets/screenshots/search.png)
-
-### Sentiment Dashboard
-
-![Dashboard](assets/screenshots/dashboard.png)
-
-### Review Classification
-
-![Classification](assets/screenshots/classification.png)
-
----
-
 # 💼 Skills Demonstrated
 
 | Category | Skills |
