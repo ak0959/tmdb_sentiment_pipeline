@@ -10,6 +10,11 @@ import numpy as np
 import base64
 import random
 
+# Import the external text template registries
+import templates
+import importlib
+importlib.reload(templates)  # Forces Streamlit to read your text updates on every refresh
+
 # 1. External Asset Integration Helper
 def local_css(file_name):
     """Loads a local CSS file with proper unsafe raw HTML rendering."""
@@ -35,8 +40,8 @@ def load_production_transformer():
 
 tokenizer, model, device = load_production_transformer()
 
-# 3. Authentic Human Consensus Synthesis Engine (Vernacular Translation Layer)
-def generate_human_consensus(fantastic, neutral, bad, title):
+# 3. Authentic Human Consensus Synthesis Engine (Dynamic Registry Router)
+def generate_human_consensus(fantastic, neutral, bad, title, vote_avg=None):
     total = len(fantastic) + len(neutral) + len(bad)
     if total == 0:
         return "Not enough data to parse an audience baseline right now."
@@ -49,131 +54,60 @@ def generate_human_consensus(fantastic, neutral, bad, title):
     seed_value = sum(ord(c) for c in title) + int(f_pct * 100)
     local_rng = random.Random(seed_value)
 
-    # Convert positive percentages into conversational human descriptions
-    if f_pct >= 85: 
-        f_phrase = local_rng.choice(["the vast majority of people", "nearly everyone who watched it", "almost the entire audience"])
-    elif f_pct >= 70: 
-        f_phrase = local_rng.choice(["a clear majority of viewers", "most fans", "a massive chunk of the crowd"])
-    elif f_pct >= 55: 
-        f_phrase = local_rng.choice(["a solid majority", "a good number of people", "more than half the viewers"])
-    else: 
-        f_phrase = local_rng.choice(["a small group of enthusiasts", "only a fraction of viewers", "a minor subset of fans"])
+    # Resolve positive percentage keys from external phrase registry
+    if f_pct >= 85: f_key = "high"
+    elif f_pct >= 70: f_key = "mid"
+    elif f_pct >= 55: f_key = "low"
+    else: f_key = "rare"
+    f_phrase = local_rng.choice(templates.PHRASE_REGISTRY["fantastic"][f_key])
 
-    # Convert negative percentages into conversational human descriptions
-    if b_pct >= 75: 
-        b_phrase = local_rng.choice(["almost the entire thread is filled with complaints", "critics completely dominate the conversation"])
-    elif b_pct >= 55: 
-        b_phrase = local_rng.choice(["most people walked away pretty disappointed", "a major chunk of the crowd felt let down"])
-    elif b_pct >= 35: 
-        b_phrase = local_rng.choice(["a significant portion of critical feedback", "a pretty large group of unhappy viewers"])
-    elif b_pct >= 15: 
-        b_phrase = local_rng.choice(["a noticeable minority of critics", "a decent sized group of complaints"])
-    elif b_pct > 0: 
-        b_phrase = local_rng.choice(["only a tiny handful of complaints", "barely a whisper of negative feedback", "a very small minority of critics"])
-    else: 
-        b_phrase = "virtually zero critical pushback"
+    # Resolve negative percentage keys from external phrase registry
+    if b_pct >= 75: b_key = "critical"
+    elif b_pct >= 55: b_key = "heavy"
+    elif b_pct >= 35: b_key = "moderate"
+    elif b_pct >= 15: b_key = "noticeable"
+    elif b_pct > 0: b_key = "trace"
+    else: b_key = "none"
+    b_phrase = local_rng.choice(templates.PHRASE_REGISTRY["bad"][b_key])
 
-    pool_intro = []
-    pool_core = []
-    pool_nuance = []
-    pool_verdict = []
+    # HYBRID ROUTING LAYER: Intercept balanced/sober macro profiles
+    is_measured_success = False
+    if vote_avg and (6.0 <= vote_avg <= 8.0) and (f_pct >= 65):
+        is_measured_success = True
 
-    # TIER A: Highly Positive Consensus
-    if f_pct >= 75:
+    if is_measured_success:
         pool_intro = [
-            f"The reaction to '{title}' is incredibly strong, with fans lining up to celebrate almost every major choice the filmmakers made.",
-            f"It's rare to see this much agreement online, but the reception for '{title}' is leaning heavily into absolute praise.",
-            f"The general vibe surrounding '{title}' is electric, proving that it hit exactly the right notes with its audience."
+            "The critical conversation surrounding '{title}' presents an interesting case study, displaying a reception that is highly favorable yet distinctly reserved and grounded in its enthusiasm.",
+            "While '{title}' has built a dedicated emotional following, the broader commentary handles the narrative with a highly analytical, measured perspective."
         ]
-        pool_core = [
-            f"Looking at the commentary, {f_phrase} walked away absolutely glowing, focusing on how well the story keeps you locked in.",
-            f"With {f_phrase} keeping an enthusiastic tone, the discussions are dominated by appreciation for the cast and its pure entertainment value.",
-            f"The consensus shows {f_phrase} giving a big thumbs-up to the film's overall ambition and scale."
+        pool_cores = [
+            "Data streams indicate that while {f_phrase} point out the clear structural strengths of the framework, the praise focuses heavily on its realistic execution rather than ecstatic hype.",
+            "The logs show that {f_phrase} admire the emotional and stylistic sincerity, keeping the active discussion focused on its sober, deeply human approach."
         ]
-        pool_nuance = [
-            f"Critical notes are pretty hard to find here—with {b_phrase}, the positive momentum stays completely unchallenged.",
-            f"The logs show an incredibly quiet critical camp with {b_phrase}, meaning most viewers simply sat back and enjoyed the ride.",
-            f"Even with {b_phrase} pointing out minor flaws, those complaints are completely drowned out by the positive energy."
+        pool_nuances = [
+            "This balanced viewpoint ensures that {b_phrase} don't derail the film's standing, as the minor critiques read more like objective observations than outright hostile complaints.",
+            "Even with {b_phrase} addressing pacing or adaptation choices, the general tone preserves a steady, reflective focus."
         ]
-        pool_verdict = [
-            "It's safe to say this one has found a permanent spot among fan favorites, cementing a legacy that will hold up well over time.",
-            "Ultimately, it marks a massive win for everyone involved, proving that when a film connects this deeply, the enthusiasm sticks around.",
-            "This is the exact kind of reception that turns a standard theatrical release into a lasting community favorite."
+        pool_verdicts = [
+            "Ultimately, it stands as a project that commands respect for its grounded execution, proving that a film doesn't need loud block-buster fireworks to make a meaningful connection.",
+            "It leaves behind a lasting legacy defined by steady, quiet appreciation rather than volatile internet noise."
         ]
-
-    # TIER B: Moderately Favorable Consensus
-    elif f_pct >= 60:
-        pool_intro = [
-            f"The general feedback for '{title}' is comfortably positive, showing that it successfully won over a solid majority of viewers.",
-            f"Most people are walking away happy with '{title}', even if the online threads feature a few healthy debates.",
-            f"The baseline consensus for '{title}' leans quite favorable, suggesting its core narrative landed well with everyday fans."
-        ]
-        pool_core = [
-            f"The metrics mirror this, showing that {f_phrase} had great things to say about the standout set pieces and character chemistry.",
-            f"With {f_phrase} keeping a favorable tone, the general commentary spends a lot of time appreciating the visual style.",
-            f"It looks like {f_phrase} felt the core entertainment value easily carried the day."
-        ]
-        pool_nuance = [
-            f"That leaves {b_phrase} picking apart minor structural issues or character arcs.",
-            f"We are seeing {b_phrase} pointing out issues with the editing, but it hasn't disrupted the broader positive reception.",
-            f"While some viewed it as a safe, middle-of-the-road entry, {b_phrase} stays low enough to keep the win secure."
-        ]
-        pool_verdict = [
-            "It might not be a flawless masterpiece to everyone, but it clearly left a strong impression that will keep it relevant for fans.",
-            "At the end of the day, it's a solid win that shows the film has plenty of genuine staying power with the audience.",
-            "The final numbers point to a successful run that completely justified the excitement surrounding its release."
-        ]
-
-    # TIER C: Heavily Critical Consensus
-    elif b_pct >= 55:
-        pool_intro = [
-            f"The feedback for '{title}' faces a steep uphill battle, with a massive wave of critical pushback dominating the reviews.",
-            f"Reactions to '{title}' trend heavily negative, with a clear majority of viewers expressing deep disappointment.",
-            f"It's safe to say '{title}' missed the mark for most people, triggering a wave of vocal frustration online."
-        ]
-        pool_core = [
-            f"The feedback is unforgiving, showing that {b_phrase} focused entirely on structural flaws and script issues.",
-            f"With {b_phrase} keeping a critical tone, the active threads are filled with complaints about clunky pacing and messy character motivations.",
-            f"The data outlines a tough reality, where {b_phrase} felt the creative risks taken simply failed to connect with the room."
-        ]
-        pool_nuance = [
-            f"Even though {f_phrase} tried to defend the film's visual style, their voices are completely buried under the critiques.",
-            f"A tiny group of defenders—amounting to just {f_phrase}—points to standout individual performances, but it isn't enough to save the baseline score.",
-            f"With {f_phrase} coming back positive, the community consensus is remarkably united in its disappointment."
-        ]
-        pool_verdict = [
-            "It's going to face a massive challenge in winning over film fans long-term, leaving a heavily troubled legacy behind.",
-            "Ultimately, the final numbers suggest a project that struggled to balance its massive ambitions with a cohesive execution.",
-            "This is a tough layout for any release, and the current vibe indicates it won't be remembered as a fan favorite anytime soon."
-        ]
-
-    # TIER D: Polarized / Split / Mixed Consensus
     else:
-        pool_intro = [
-            f"The conversation around '{title}' is highly polarized, creating an intriguing split across independent review spaces.",
-            f"Audiences are completely divided over '{title}', with no single opinion managing to dominate the forums.",
-            f"The baseline reception for '{title}' is sitting in a classic middle ground, generating an intense back-and-forth online."
-        ]
-        pool_core = [
-            "For every comment praising an incredible action set piece or a brilliant performance, there is a counter-point pulling apart structural flaws.",
-            "Discussions are completely fragmented, with fans fiercely debating whether the unique tone worked or completely tanked.",
-            "The threads show a direct clash between viewers who loved the experimental style and traditionalists who wanted a cleaner plot."
-        ]
-        pool_nuance = [
-            f"The metrics confirm this deep divide, showing a nearly even split where {f_phrase} runs directly into critical pushback.",
-            f"With a solid chunk of viewers viewing it as an average, safe experience, the remaining camps are locked in a tight tug-of-war.",
-            f"The pipeline clocked a highly balanced spread, making it a true textbook definition of a split room."
-        ]
-        pool_verdict = [
-            "This exact pattern guarantees that the film will keep provoking lively debates rather than settling into a quiet consensus.",
-            "At the end of the day, it's a project that refuses to leave people indifferent, which is often a win in its own unique way.",
-            "The split vibe ensures that its ultimate legacy will completely depend on what individual viewers look for in a film."
-        ]
+        if f_pct >= 75: tier_key = "FANTASTIC"
+        elif f_pct >= 60: tier_key = "FAVORABLE"
+        elif b_pct >= 55: tier_key = "CRITICAL"
+        else: tier_key = "POLARIZED"
+        
+        pool_intro = templates.TIER_REGISTRY[tier_key]["intros"]
+        pool_cores = templates.TIER_REGISTRY[tier_key]["cores"]
+        pool_nuances = templates.TIER_REGISTRY[tier_key]["nuances"]
+        pool_verdicts = templates.TIER_REGISTRY[tier_key]["verdicts"]
 
-    s1 = local_rng.choice(pool_intro)
-    s2 = local_rng.choice(pool_core)
-    s3 = local_rng.choice(pool_nuance)
-    s4 = local_rng.choice(pool_verdict)
+    # Select pieces and extract tokens dynamically
+    s1 = local_rng.choice(pool_intro).format(title=title, f_phrase=f_phrase, b_phrase=b_phrase)
+    s2 = local_rng.choice(pool_cores).format(title=title, f_phrase=f_phrase, b_phrase=b_phrase)
+    s3 = local_rng.choice(pool_nuances).format(title=title, f_phrase=f_phrase, b_phrase=b_phrase)
+    s4 = local_rng.choice(pool_verdicts).format(title=title, f_phrase=f_phrase, b_phrase=b_phrase)
 
     return f"{s1} {s2} {s3} {s4}"
 
@@ -274,6 +208,11 @@ if spill_tea_clicked and movie_id:
                     review_text = text_batch[idx]
                     pred_class = prob.argmax()
                     
+                    # TONE FIX ADJUSTMENT: Reclassify balanced text profiles into Neutral
+                    lowercase_review = review_text.lower()
+                    if pred_class == 2 and any(kw in lowercase_review for kw in ["delicate balance", "grounded approach", "measured tone", "analytical"]):
+                        pred_class = 1
+                    
                     if pred_class == 2: fantastic_bucket.append(review_text)
                     elif pred_class == 1: neutral_bucket.append(review_text)
                     else: bad_bucket.append(review_text)
@@ -281,7 +220,7 @@ if spill_tea_clicked and movie_id:
             backdrop_url = f"https://image.tmdb.org/t/p/original{backdrop_path}" if backdrop_path else ""
             poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else ""
             
-            # Assemble Star Breakdown Elements (Flush Left String Building)
+            # Assemble Star Breakdown Elements
             star_counts = simulate_star_breakdown(global_votes, vote_avg)
             star_bars_html = ""
             for star_idx, count in enumerate(reversed(star_counts)):
@@ -311,7 +250,7 @@ if spill_tea_clicked and movie_id:
 </div>
 """, unsafe_allow_html=True)
             
-            # DATA BOUNDARY CHECK: Side-by-Side Flexbox warning card using Base64 Local Image parsing
+            # CONDITIONAL INTERFACE OVERLAY: Summaries require at least 10 text reviews
             if total_reviews < 10:
                 gif_html = ""
                 gif_path = r"assets/more data.gif"
@@ -344,35 +283,53 @@ if spill_tea_clicked and movie_id:
                 pct_neutral = (len(neutral_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
                 pct_bad = (len(bad_bucket) / total_analyzed) * 100 if total_analyzed > 0 else 0
                 
-                # Semantic Metric Cards
+                # Minimalist Floating Emoji Metrics (Borders & Card Containers completely stripped)
                 m_col1, m_col2, m_col3 = st.columns(3)
-                with m_col1: st.markdown(f'<div class="metric-card accent-fantastic"><p class="metric-header" style="color: #28a745;">🎉 Fantastic</p><p class="metric-value">{pct_fantastic:.1f}%</p></div>', unsafe_allow_html=True)
-                with m_col2: st.markdown(f'<div class="metric-card accent-neutral"><p class="metric-header" style="color: #ffc107;">🔆 Neutral</p><p class="metric-value">{pct_neutral:.1f}%</p></div>', unsafe_allow_html=True)
-                with m_col3: st.markdown(f'<div class="metric-card accent-bad"><p class="metric-header" style="color: #dc3545;">❌ Not Good At All</p><p class="metric-value">{pct_bad:.1f}%</p></div>', unsafe_allow_html=True)
+                with m_col1: 
+                    st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤩</span>
+                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_fantastic:.1f}%</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with m_col2: 
+                    st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">🤔</span>
+                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_neutral:.1f}%</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with m_col3: 
+                    st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 3.2rem; display: block; margin-bottom: 5px;">😞</span>
+                        <span style="font-size: 1.8rem; font-weight: bold; color: #ffffff;">{pct_bad:.1f}%</span>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 # Consensus Summary Layout Box
                 st.markdown("<br><h3 style='font-size: 1.4rem;'>📌 The TL;DR Consensus</h3>", unsafe_allow_html=True)
-                summary_text = generate_human_consensus(fantastic_bucket, neutral_bucket, bad_bucket, title)
+                summary_text = generate_human_consensus(fantastic_bucket, neutral_bucket, bad_bucket, title, vote_avg)
                 st.markdown(f'<div class="summary-box">{summary_text}</div>', unsafe_allow_html=True)
                 
-                # Masonry Review Grid Rows
-                st.markdown("<h3 style='font-size: 1.4rem;'>💬 Real Reviews</h3>", unsafe_allow_html=True)
-                r_col1, r_col2, r_col3 = st.columns(3)
-                with r_col1:
-                    st.markdown('<p class="review-column-header" style="color: #28a745;">🟢 Fantastic Reviews</p>', unsafe_allow_html=True)
-                    if fantastic_bucket:
-                        for text in fantastic_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                    else: st.caption("No text records available in this sentiment class.")
-                with r_col2:
-                    st.markdown('<p class="review-column-header" style="color: #ffc107;">🟡 Neutral Reviews</p>', unsafe_allow_html=True)
-                    if neutral_bucket:
-                        for text in neutral_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                    else: st.caption("No text records available in this sentiment class.")
-                with r_col3:
-                    st.markdown('<p class="review-column-header" style="color: #dc3545;">🔴 Bad Reviews</p>', unsafe_allow_html=True)
-                    if bad_bucket:
-                        for text in bad_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
-                    else: st.caption("No text records available in this sentiment class.")
+            # UNIFIED REVIEW DISPLAY: Renders the column rows for ALL search results regardless of total count
+            st.markdown("<br><h3 style='font-size: 1.4rem;'>💬 Real Reviews</h3>", unsafe_allow_html=True)
+            r_col1, r_col2, r_col3 = st.columns(3)
+            with r_col1:
+                st.markdown('<p class="review-column-header" style="color: #28a745;">🟢 Fantastic Reviews</p>', unsafe_allow_html=True)
+                if fantastic_bucket:
+                    for text in fantastic_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                else: st.caption("No text records available in this sentiment class.")
+            with r_col2:
+                st.markdown('<p class="review-column-header" style="color: #ffc107;">🟡 Neutral Reviews</p>', unsafe_allow_html=True)
+                if neutral_bucket:
+                    for text in neutral_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                else: st.caption("No text records available in this sentiment class.")
+            with r_col3:
+                st.markdown('<p class="review-column-header" style="color: #dc3545;">🔴 Bad Reviews</p>', unsafe_allow_html=True)
+                if bad_bucket:
+                    for text in bad_bucket[:5]: st.markdown(f'<div class="review-card">{text[:320]}...</div>', unsafe_allow_html=True)
+                else: st.caption("No text records available in this sentiment class.")
         else:
             st.error("Failed to extract operational metadata records from TMDb channels.")
 elif spill_tea_clicked:
@@ -407,7 +364,7 @@ st.markdown(f"""
 {svg_content}
 </div>
 <p class="footer-text">
-This product uses the TMDb API but is not endorsed or certified by TMDb. All catalog metadata entries, credits, poster matrices, and text rows are fetched dynamically via live open database infrastructure channels.
+This product uses the TMDb API but is not endorsed or certified by TMDb. All catalog metadata entries, credits, poster matrices, and text reviews are fetched dynamically via live open database infrastructure channels.
 </p>
 </div>
 """, unsafe_allow_html=True)
