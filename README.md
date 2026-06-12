@@ -14,6 +14,12 @@
 
 ---
 
+## 🚀 Live Demo
+
+👉 **Try the application here**
+
+[https://customersentimentbert-n6emezcfiq7fbm72hqqgbs.streamlit.app](https://tmdbsentimentpipeline-hxzs7krjdez2jzvn5pgwn9.streamlit.app/)
+
 ## 🎯 What Makes This Project Different?
 
 Most sentiment analysis projects stop at:
